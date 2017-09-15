@@ -1,17 +1,20 @@
 package foo.fausets;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Set;
 
+import org.openqa.selenium.Alert;
 import org.openqa.selenium.By;
+import org.openqa.selenium.Dimension;
+import org.openqa.selenium.NoAlertPresentException;
+import org.openqa.selenium.Point;
+import org.openqa.selenium.UnhandledAlertException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.chrome.ChromeOptions;
-import org.openqa.selenium.remote.DesiredCapabilities;
-import org.openqa.selenium.support.ui.Wait;
-import org.openqa.selenium.support.ui.WebDriverWait;
+
+import foo.runnable.RunAll;
+import foo.webdriver.StartChromeDriver;
 
 public class AppBF implements Runnable {
 
@@ -20,31 +23,29 @@ public class AppBF implements Runnable {
     int MINUTES_TOWAIT = 10;
 
     WebDriver driver;
-    Wait<WebDriver> wait;
 
     String url;
     String user;
     String pass;
 
-    public AppBF(String url, String user, String pass) {
+    Point p;
+    Dimension s = RunAll.SIZE2;
+
+    public AppBF(String url, String user, String pass, Point p) {
         this.url = url;
         this.user = user;
         this.pass = pass;
+        this.p = p;
     }
 
     public void run() {
-        System.setProperty("webdriver.chrome.driver", "src/main/resources/chromedriver.exe");
+        driver = new StartChromeDriver().getDriver(driver);
         bitfun();
     }
 
     private void bitfun() {
-
-        ChromeOptions chrome_options = new ChromeOptions();
-        chrome_options.addArguments("--incognito");
-        DesiredCapabilities dc = DesiredCapabilities.chrome();
-        dc.setCapability(ChromeOptions.CAPABILITY, chrome_options);
-        driver = new ChromeDriver(dc);
-        wait = new WebDriverWait(driver, 30);
+        driver.manage().window().setSize(s);
+        driver.manage().window().setPosition(p);
         driver.get(url);
         try {
             getLogin();
@@ -54,6 +55,7 @@ public class AppBF implements Runnable {
             }
 
         } catch (Exception e) {
+            System.out.println("***E");
             e.printStackTrace();
             driver.close();
         } finally {
@@ -84,50 +86,70 @@ public class AppBF implements Runnable {
 
     private void claim() throws InterruptedException {
         Utils.getCurrentTime();
-        WebElement button = driver.findElement(By.className("col-sm-5")).findElement(By.tagName("button"));
-        if (button.getText().contains("Claim now")) {
-            button.click();
-            Set<String> hands = driver.getWindowHandles();
-            if (hands.size() > 1) {
-                for (String string : hands) {
-                    driver.switchTo().window(string);
-                    if (driver.getCurrentUrl().contains(url))
-                        break;
+        WebElement button = driver.findElement(By.cssSelector("button.btn.btn-primary.btn-lg.claimButton"));
+        System.out.println(button.getText());
+        Utils.scrollAndClick(button, driver);
+        backToOriginalPage();
+        button = driver.findElement(By.cssSelector("button.btn.btn-primary.btn-lg.claimButton"));
+        Utils.scrollAndClick(button, driver);
+        driver.switchTo().frame(0);
+
+        WebElement check = driver.findElement(By.id("recaptcha-anchor"));
+        Utils.scrollAndClick(check, driver);
+
+        Utils.bip(BEEP, WAITB);
+        driver.switchTo().defaultContent();
+        driver.switchTo().frame(10);
+        String rcIS = driver.findElements(By.tagName("div")).get(1).getAttribute("id");
+        System.out.println(rcIS);// rc-imageselect
+        // driver.findElement(By.id("recaptcha-verify-button")).click();
+        whenTheElementLeftDom();
+        System.out.println("**l");
+        driver.switchTo().defaultContent();
+        driver.switchTo().frame(0);
+        driver.switchTo().defaultContent();
+        WebElement footer = driver.findElements(By.className("modal-footer")).get(0);
+        WebElement claimFinal = footer.findElements(By.tagName("button")).get(1);
+        System.out.println(claimFinal.getText());// Claim
+        claimFinal.click();
+        Thread.sleep(2000);
+        WebElement close = driver.findElements(By.cssSelector("button.btn.btn-default")).get(1);
+        System.out.println(close.getText());// 602
+        Utils.scrollAndClick(close, driver);
+    }
+
+    private void backToOriginalPage() throws InterruptedException {
+        ArrayList<String> tabs2 = new ArrayList<String>(driver.getWindowHandles());
+        if (tabs2.size() == 2) {
+            try {
+                driver.findElement(By.cssSelector("button.btn.btn-primary.btn-lg.claimButton"));
+            } catch (UnhandledAlertException e) {
+                try {
+                    Alert alert = driver.switchTo().alert();
+                    String alertText = alert.getText();
+                    System.out.println("Alert data: " + alertText);
+                    alert.accept();
+                } catch (NoAlertPresentException e1) {
+                    e1.printStackTrace();
                 }
             }
+            driver.close();
+            driver.switchTo().window(tabs2.get(1));
+            System.out.println(driver.findElement(By.cssSelector("button.btn.btn-primary.btn-lg.claimButton")).getText());
+            Thread.sleep(3000);
         }
-        WebElement check;
-        try {
-            check = driver.findElement(By.id("recaptcha-anchor"));
-        } catch (NoSuchElementException e) {
-            driver.findElement(By.className("col-sm-5")).findElement(By.tagName("button")).click();
-            check = driver.findElement(By.id("recaptcha-anchor"));
-        }
-        check.click();
-
-        /*
-         * if (!passCatpcha()) { claim(); System.out.println("it++"); }
-         */
     }
 
-    /* Method under construction */
-    private boolean passCatpcha() {
-        if (seeCaptcha()) {
-            Utils.bip(BEEP, WAITB);
+    private void whenTheElementLeftDom() {
+        while (true) {
+            System.out.println("iteration");
+            try {
+                String verifyButton = driver.findElement(By.id("recaptcha-verify-button")).getAttribute("disabled");
+                if (verifyButton.contains("true"))
+                    return;
+            } catch (NoSuchElementException e) {
+                return;
+            }
         }
-        /*
-         * try { driver.findElement(By.id("button")).click(); } catch
-         * (NoSuchSessionException e) { return false; }
-         */
-        return true;
-    }
-
-    private boolean seeCaptcha() {
-        try {
-            driver.findElement(By.id("adcopy-instr"));
-        } catch (Exception e) {
-            return false;
-        }
-        return true;
     }
 }

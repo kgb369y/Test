@@ -3,13 +3,14 @@ package foo.games;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.ElementNotVisibleException;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.Point;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 
-import fausets.Utils;
+import foo.fausets.Utils;
+import foo.runnable.RunAll;
 import foo.webdriver.StartChromeDriver;
-import runnable.RunAll;
 
 public class Recolector  implements Runnable {
 	int BEEP = 10;
@@ -72,6 +73,7 @@ public class Recolector  implements Runnable {
     	WebElement form_pwd = driver.findElement(By.name("form_pwd"));
     	form_pwd.sendKeys(this.pass);
     	driver.findElement(By.name("routing_code")).sendKeys("");
+    	try{ Utils.scrollAndClickWBuild(By.className("tclose"), driver);} catch(NoSuchElementException e){}
     	Utils.bip(BEEP, WAITB);
     	while(seeCaptchaPreLogin());
     }
@@ -95,4 +97,5 @@ public class Recolector  implements Runnable {
         return true;
 
     }
+    
 }
