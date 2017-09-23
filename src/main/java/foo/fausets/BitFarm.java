@@ -34,8 +34,7 @@ public class BitFarm implements Runnable {
     }
 
     private void bitFarm() {
-        driver.manage().window().setSize(s);
-        driver.manage().window().setPosition(p);
+        Utils.setSizeAndPosition(driver, s, p);
         driver.get(url);
         try {
             getLogin();

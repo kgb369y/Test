@@ -11,6 +11,7 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.Wait;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
+import foo.fausets.Utils;
 import foo.webdriver.StartChromeDriver;
 
 public class PrintWallIDs implements Runnable {
@@ -46,8 +47,7 @@ public class PrintWallIDs implements Runnable {
     }
 
     private void printWallets() {
-        driver.manage().window().setSize(new Dimension(683, 728));
-        driver.manage().window().setPosition(new Point(684, 0));
+        Utils.setSizeAndPosition(driver, new Dimension(683, 728), new Point(684, 0));
         try {
             System.out.println("******************************************************************");
             for (int i = 0; i < 3; i++) {

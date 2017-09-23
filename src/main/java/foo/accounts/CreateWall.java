@@ -58,8 +58,7 @@ public class CreateWall implements Runnable {
     }
 
     private void createWallet() throws AWTException {
-        driver.manage().window().setSize(new Dimension(683, 728));
-        driver.manage().window().setPosition(new Point(684, 0));
+        Utils.setSizeAndPosition(driver, new Dimension(683, 728),new Point(684, 0));
         driver.get(url);
         String originalTab = driver.getWindowHandle();
         try {

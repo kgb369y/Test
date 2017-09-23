@@ -39,8 +39,7 @@ public class App implements Runnable {
     }
 
     private void huefaucet() {
-        driver.manage().window().setSize(s);
-        driver.manage().window().setPosition(p);
+        Utils.setSizeAndPosition(driver, s, p);
         driver.get(url);
         try {
             getLogin();

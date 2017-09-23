@@ -30,8 +30,7 @@ public class BuyMoreLit implements Runnable {
     }
 
     private void bitFarm() {
-        driver.manage().window().setSize(new Dimension(683, 728));
-        driver.manage().window().setPosition(new Point(0, 0));
+        Utils.setSizeAndPosition(driver, new Dimension(683, 728), new Point(0, 0));
         driver.get(bitFarm);
         try {
             getLogin();

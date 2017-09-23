@@ -13,8 +13,10 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.SourceDataLine;
 
 import org.openqa.selenium.By;
+import org.openqa.selenium.Dimension;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
+import org.openqa.selenium.Point;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.interactions.Actions;
@@ -22,6 +24,16 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.Wait;
 
 public class Utils {
+  public static void setSizeAndPosition(WebDriver driver, Dimension dimension, Point position) {
+    if (dimension != null)
+      driver.manage()
+          .window()
+          .setSize(dimension);
+    if (position != null)
+      driver.manage()
+          .window()
+          .setPosition(position);
+  }
 
   public static void bip(int beep, int waitb) {
 
@@ -195,4 +207,15 @@ public class Utils {
     }
   }
 
+  public static void backWindow(WebDriver driver, String original) {
+    driver.close();
+    driver.switchTo()
+        .window(original);
+  }
+
+  public static void goNextWindow(WebDriver driver) {
+    ArrayList<String> tabs = new ArrayList<String>(driver.getWindowHandles());
+    driver.switchTo()
+        .window(tabs.get(1));
+  }
 }

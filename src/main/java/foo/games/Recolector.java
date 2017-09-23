@@ -38,8 +38,7 @@ public class Recolector  implements Runnable {
     }
 
     private void gamer() {
-        driver.manage().window().setSize(s);
-        driver.manage().window().setPosition(p);
+        Utils.setSizeAndPosition(driver, s, p);
         driver.get(url);
         try {
         	getLogin();

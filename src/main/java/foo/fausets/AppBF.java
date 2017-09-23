@@ -44,8 +44,7 @@ public class AppBF implements Runnable {
     }
 
     private void bitfun() {
-        driver.manage().window().setSize(s);
-        driver.manage().window().setPosition(p);
+        Utils.setSizeAndPosition(driver, s, p);
         driver.get(url);
         try {
             getLogin();

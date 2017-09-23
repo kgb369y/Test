@@ -46,8 +46,7 @@ public class CreateFb implements Runnable {
     }
 
     private void createMail() {
-        driver.manage().window().setSize(new Dimension(683, 728));
-        driver.manage().window().setPosition(new Point(684, 0));
+        Utils.setSizeAndPosition(driver, new Dimension(683, 728), new Point(684, 0));
         driver.get(url);
         try {
             for (int i = 0; i < 6; i++) {

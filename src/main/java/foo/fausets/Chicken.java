@@ -1,6 +1,5 @@
 package foo.fausets;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.openqa.selenium.By;
@@ -48,13 +47,7 @@ public class Chicken implements Runnable {
   }
 
   private void chicken() {
-    driver.manage()
-        .window()
-        .setSize(s);
-    driver.manage()
-        .window()
-        .setPosition(p);
-
+    Utils.setSizeAndPosition(driver, s, p);
     driver.get(url);
     try {
       getLogin();
@@ -66,7 +59,6 @@ public class Chicken implements Runnable {
     } finally {
       driver.close();
     }
-
   }
 
   private void viewAds() throws InterruptedException {
@@ -74,101 +66,80 @@ public class Chicken implements Runnable {
     driver.findElement(By.partialLinkText("View Ads"))
         .click();
     Utils.zoomTo(driver, 0.5);
-    List<Integer> ads = getPositionsOfAvailableView();
+    List<WebElement> ads = getPositionsOfAvailableView();
+
     String original = driver.getWindowHandle();
     if (ascendent) {
-      for (int i = 0; i < ads.size(); i++) {
-        if (clickOnAd(original, ads.get(i)))
-          continue;
-      }
-      log.info("End of for in order " + ascendent);
+      pending = clik(0, ads.size() - 1, original, ads);
     } else {
-      for (int i = ads.size() - 1; i > -1; i--) {
-        if (!clickOnAd(original, ads.get(i))) {
-          pending = true;
-          continue;
-        }
-      }
-      log.info("End of for in order " + ascendent);
+      pending = clik(ads.size() - 1, 0, original, ads);
     }
+    log.info("End of for in order " + ascendent);
     if (pending) {
-      driver.navigate().refresh();
+      driver.navigate()
+          .refresh();
       viewAds();
     }
   }
 
-  private List<Integer> getPositionsOfAvailableView() {
-    List<Integer> positions = new ArrayList<Integer>();
-    List<WebElement> adsParent = driver.findElement(By.id("right"))
-        .findElements(By.tagName("a"));
-    log.info("the TOTAL of views elements are " + adsParent.size());
-    int p = 0;
-    for (WebElement ad : adsParent) {
-      if (!ad.findElement(By.tagName("div"))
-          .getAttribute("class")
-          .contains("disabled_pbx")) {
-        positions.add(p);
+  private boolean clik(int start, int end, String original, List<WebElement> ads) {
+    boolean sucess = false;
+    for (int i = start; i == end;) {
+      if (!clickOnAd(original, ads.get(i))) {
+        sucess = true;
       }
-      p++;
+      i = start == 0 ? i + 1 : i - 1;
+      continue;
     }
-    log.info("the size of CURRENT positions is " + positions.size() + " /n and the views to clicked are " + positions);
-    return positions;
+    return sucess;
   }
 
-  private boolean clickOnAd(String original, int i) {
+  private List<WebElement> getPositionsOfAvailableView() {
+    List<WebElement> adsParentAvailables = driver.findElements(By.className("hap"));
+    adsParentAvailables.removeAll(driver.findElements(By.className("disabled_pbx")));
+    adsParentAvailables.removeIf(element -> element.findElement(By.className("hap_title"))
+        .getText()
+        .contains("goostreet"));
+    return adsParentAvailables;
+  }
+
+  private boolean clickOnAd(String original, WebElement ad) {
     try {
-      WebElement ad = driver.findElement(By.id("right"))
-          .findElements(By.tagName("a"))
-          .get(i);
-      if (ad.findElement(By.tagName("div"))
-          .getAttribute("class")
-          .contains("disabled_pbx")) {
-        log.info("add " + i + " is disabled");
-        return true;
-      }
-      if (ad.findElement(By.className("hap_title"))
-          .getText()
-          .contains("goostreet")) {
-        log.info("add " + i + " is an specific add invalid with title goostreet");
-        return true;
-      }
       Utils.scrollAndClick(ad, driver);
-      ArrayList<String> tabs = new ArrayList<String>(driver.getWindowHandles());
-      driver.switchTo()
-          .window(tabs.get(1));
-      String message = driver.findElement(By.id("desc"))
-          .getText();
-      if (message.contains("Already")) {
-        driver.close();
-        driver.switchTo()
-            .window(original);
-        log.info("add " + i + " is already viewed");
-        return true;
-      } else {
-        while (!(driver.findElement(By.id("desc"))
-            .getText()
-            .contains("Completed!")
-            || driver.findElement(By.id("desc"))
-                .getText()
-                .contains("Invalid Transaction!"))) {
-          Thread.sleep(5000);
-        }
-        log.info("add " + i + " " + driver.findElement(By.id("desc"))
-            .getText());
-        driver.close();
-        driver.switchTo()
-            .window(original);
-        return true;
-      }
+      changeOfWindowAndWaitComplete(original);
+      return true;
     } catch (Exception e) {
-      log.info("add " + i + " with exception " + e.getCause()
-          .getMessage());
       return false;
     }
   }
 
+  private boolean changeOfWindowAndWaitComplete(String original) throws InterruptedException {
+    Utils.goNextWindow(driver);
+    String message = driver.findElement(By.id("desc"))
+        .getText();
+    if (message.contains("Already")) {
+      Utils.backWindow(driver, original);
+      return true;
+    } else {
+      while (!isCompleted()) {
+        Thread.sleep(5000);
+      }
+      Utils.backWindow(driver, original);
+      return true;
+    }
+  }
+
+  private boolean isCompleted() {
+    String headerTxt = driver.findElement(By.id("desc"))
+        .getText();
+    if (headerTxt.contains("Completed!") || headerTxt.contains("Invalid Transaction!"))
+      return true;
+    else
+      return false;
+  }
+
   private void getLogin() {
-    WebDriverWait wait = new WebDriverWait(driver, 60);
+    WebDriverWait wait = new WebDriverWait(driver, 120);
     driver.get("http://bitcofarm.com/login");
     driver.findElement(By.name("username"))
         .sendKeys(user);
@@ -178,7 +149,6 @@ public class Chicken implements Runnable {
         .click();
     Utils.bip(BEEP, WAITB);
     wait.until(ExpectedConditions.presenceOfAllElementsLocatedBy(By.partialLinkText("View Ads")));
-
   }
 
 }
