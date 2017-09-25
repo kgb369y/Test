@@ -1,5 +1,6 @@
 package foo.fausets;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.openqa.selenium.By;
@@ -54,7 +55,7 @@ public class Chicken implements Runnable {
       viewAds();
       log.info("End of views...");
     } catch (Exception e) {
-      e.printStackTrace();
+      log.error("Err ", e);
       driver.close();
     } finally {
       driver.close();
@@ -74,24 +75,26 @@ public class Chicken implements Runnable {
     } else {
       pending = clik(ads.size() - 1, 0, original, ads);
     }
-    log.info("End of for in order " + ascendent);
+    
     if (pending) {
       driver.navigate()
           .refresh();
       viewAds();
     }
+    log.info("End of for in order " + ascendent);
   }
 
   private boolean clik(int start, int end, String original, List<WebElement> ads) {
-    boolean sucess = false;
-    for (int i = start; i == end;) {
-      if (!clickOnAd(original, ads.get(i))) {
-        sucess = true;
+    List<Boolean> fails = new ArrayList<Boolean>();
+    int i = start;
+    while (i != end) {
+      if (!clickOnAd(original, ads.get(i), i)) {
+        fails.add(true);
       }
       i = start == 0 ? i + 1 : i - 1;
       continue;
     }
-    return sucess;
+    return fails.size() == 0 ? true : false;
   }
 
   private List<WebElement> getPositionsOfAvailableView() {
@@ -100,28 +103,49 @@ public class Chicken implements Runnable {
     adsParentAvailables.removeIf(element -> element.findElement(By.className("hap_title"))
         .getText()
         .contains("goostreet"));
+    getEstimatedTime(adsParentAvailables.size());
     return adsParentAvailables;
   }
 
-  private boolean clickOnAd(String original, WebElement ad) {
+  private void getEstimatedTime(int size) {
+    String unity = "seconds";
+    int time = size * 35;
+    if (time > 60) {
+      time = time / 60;
+      unity = "minutes";
+    } 
+    if (time > 60) {
+      time = time / 60;
+      unity = "hours";
+    }
+    if (time > 24) {
+      time = time / 24;
+      unity = "days";
+    }
+    log.info("Pending stimated time is " + time + unity);
+  }
+
+  private boolean clickOnAd(String original, WebElement ad, int i) {
     try {
       Utils.scrollAndClick(ad, driver);
-      changeOfWindowAndWaitComplete(original);
-      return true;
+      return changeOfWindowAndWaitComplete(original, i);
     } catch (Exception e) {
+      log.error("Err view " + i, e);
+      Utils.changeTabAndCloseNextOthers(driver, original);
       return false;
     }
   }
 
-  private boolean changeOfWindowAndWaitComplete(String original) throws InterruptedException {
+  private boolean changeOfWindowAndWaitComplete(String original, int i) throws InterruptedException {
     Utils.goNextWindow(driver);
     String message = driver.findElement(By.id("desc"))
         .getText();
     if (message.contains("Already")) {
       Utils.backWindow(driver, original);
+      log.info("The ad " + i + " is " + message);
       return true;
     } else {
-      while (!isCompleted()) {
+      while (!isCompleted(i)) {
         Thread.sleep(5000);
       }
       Utils.backWindow(driver, original);
@@ -129,12 +153,13 @@ public class Chicken implements Runnable {
     }
   }
 
-  private boolean isCompleted() {
+  private boolean isCompleted(int i) {
     String headerTxt = driver.findElement(By.id("desc"))
         .getText();
-    if (headerTxt.contains("Completed!") || headerTxt.contains("Invalid Transaction!"))
+    if (headerTxt.contains("Completed!") || headerTxt.contains("Invalid Transaction!")) {
+      log.info("The ad " + i + " is " + headerTxt);
       return true;
-    else
+    } else
       return false;
   }
 
